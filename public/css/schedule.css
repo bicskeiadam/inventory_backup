@@ -1,0 +1,108 @@
+/* ===== Globális ===== */
+body {
+    background: #f0f4ff;
+    font-family: 'Inter', sans-serif;
+    color: #1e2a4a;
+    padding-bottom: 50px;
+}
+
+.card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    background: #fff;
+    padding: 20px;
+    animation: fadeIn 0.5s ease;
+}
+
+/* ===== Headings ===== */
+h4, h5 {
+    font-weight: 600;
+    color: #12306b;
+}
+
+/* ===== Forms ===== */
+.form-select, .form-control {
+    border-radius: 10px;
+    border: 2px solid #d0dcff;
+    padding: 8px 12px;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #4d77ff;
+    box-shadow: 0 0 0 .2rem rgba(77,119,255,0.25);
+}
+
+/* ===== Buttons ===== */
+.btn-outline-primary {
+    border-width: 2px;
+}
+.btn-outline-primary:hover {
+    background: #4d77ff;
+    color: #fff;
+}
+.btn-primary {
+    background: #4d77ff;
+    border: none;
+}
+.btn-primary:hover {
+    background: #3c63db;
+}
+.btn-success {
+    background: #22c55e;
+    border: none;
+}
+.btn-success:hover {
+    background: #1da34e;
+}
+
+/* ===== Listák ===== */
+.list-group-item {
+    border: none;
+    border-radius: 14px !important;
+    margin-bottom: 10px;
+    padding: 14px 18px;
+    background: #f8faff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.25s ease;
+}
+.list-group-item:hover {
+    background: #e8eeff;
+    transform: translateX(4px);
+}
+
+/* ===== Checkbox blokk ===== */
+.form-check {
+    margin-bottom: 8px;
+}
+.form-check-input:checked {
+    background-color: #4d77ff;
+    border-color: #4d77ff;
+}
+
+/* ===== Ütemezési kártya ===== */
+.border {
+    border-radius: 12px;
+    background: #f5faff;
+    padding: 10px 14px;
+    transition: 0.3s ease;
+}
+.border:hover {
+    background: #e0ebff;
+}
+
+/* ===== Animáció ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Reszponzív ===== */
+@media (max-width: 768px) {
+    .card {
+        padding: 20px;
+    }
+}

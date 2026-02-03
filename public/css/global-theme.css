@@ -1,0 +1,227 @@
+/* =====================
+   Global Theme System
+   Supports Light/Dark Mode
+===================== */
+
+:root {
+    /* Default Dark Theme (Slate) */
+    --bg-primary: #0F172A;
+    --bg-secondary: #1E293B;
+    --bg-card: #1E293B;
+    --bg-surface: #334155;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --secondary: #10B981;
+    --danger: #EF4444;
+    --warning: #F59E0B;
+    --border: #334155;
+
+    /* Semantic overrides */
+    --navbar-bg: linear-gradient(135deg, #2563eb, #3b82f6);
+    --navbar-text: #FFFFFF;
+}
+
+[data-theme="light"] {
+    /* Light Theme (Slate) */
+    --bg-primary: #F8FAFC;
+    --bg-secondary: #F1F5F9;
+    --bg-card: #FFFFFF;
+    --bg-surface: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --primary: #2563eb;
+    /* Slightly darker for better visibility on white */
+    --primary-hover: #1d4ed8;
+    --secondary: #059669;
+    /* Darker emerald */
+    --danger: #DC2626;
+    /* Darker red */
+    --warning: #D97706;
+    /* Darker amber */
+    --border: #CBD5E1;
+}
+
+/* =====================
+   RESET & BASE
+===================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--bg-primary) !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--text-primary) !important;
+    min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5,
+.h6 {
+    color: var(--text-primary) !important;
+}
+
+strong,
+b {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+label {
+    color: var(--text-primary) !important;
+}
+
+/* =====================
+   NAVBAR
+===================== */
+.navbar {
+    background: var(--navbar-bg) !important;
+    padding: 1rem 2rem !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+.navbar-brand {
+    color: var(--navbar-text) !important;
+    font-weight: 700;
+}
+
+.navbar-text {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* =====================
+   CONTAINERS
+===================== */
+.page-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* =====================
+   CARDS
+===================== */
+.card {
+    background: var(--bg-card) !important;
+    border-radius: 16px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.card-header,
+.card-footer {
+    border-color: var(--border) !important;
+    background: transparent !important;
+    color: var(--text-primary) !important;
+}
+
+/* =====================
+   TABLES
+===================== */
+.table {
+    color: var(--text-primary) !important;
+}
+
+.table thead th {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.table tbody td {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.table tbody tr:hover td {
+    background: var(--bg-surface) !important;
+}
+
+/* =====================
+   FORMS
+===================== */
+.form-control,
+.form-select {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control::placeholder {
+    color: var(--text-secondary) !important;
+}
+
+/* =====================
+   BUTTONS
+===================== */
+.btn-primary {
+    background: var(--primary) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.btn-secondary {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-secondary:hover {
+    background: var(--bg-card) !important;
+    border-color: var(--primary) !important;
+}
+
+.btn-outline-primary {
+    border: 1px solid var(--primary) !important;
+    color: var(--primary) !important;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary) !important;
+    color: white !important;
+}
+
+/* =====================
+   UTILITIES
+===================== */
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+.bg-light {
+    background: var(--bg-primary) !important;
+}
+
+/* Fix legacy uses */
+.bg-white {
+    background: var(--bg-card) !important;
+}
+
+.shadow-sm {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Force light text in navbar specifically */
+.navbar .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+    color: white !important;
+}
+
+.navbar .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}

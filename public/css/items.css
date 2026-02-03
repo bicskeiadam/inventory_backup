@@ -1,0 +1,110 @@
+/* Háttér */
+.bg-dashboard {
+    background: #eef2f7;
+}
+
+/* Fő kártya */
+.dashboard-card {
+    background: #fff;
+    padding: 35px;
+    border-radius: 18px;
+}
+
+/* Címek */
+.title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0d47a1;
+}
+
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: #1565c0;
+}
+
+/* Filter select */
+.filter-select {
+    padding: 12px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+}
+
+.filter-btn {
+    padding: 12px;
+    border-radius: 10px;
+}
+
+/* Táblázat */
+.custom-table thead {
+    background: #e3f2fd;
+}
+
+.custom-table thead th {
+    color: #0d47a1;
+    font-weight: 600;
+}
+
+.custom-table tbody tr:hover {
+    background: #f5f9ff;
+}
+
+/* Form dobozok */
+.form-box {
+    background: #ffffff;
+    border-radius: 16px;
+}
+
+/* Gombok */
+.action-btn {
+    border-radius: 8px !important;
+}
+
+.btn-primary {
+    background: #1565c0 !important;
+    border: none !important;
+}
+
+.btn-primary:hover {
+    background: #0d47a1 !important;
+}
+
+.btn-success {
+    border-radius: 8px;
+}
+
+/* Inputs */
+input.form-control-lg,
+select.form-select-lg {
+    border-radius: 10px;
+    height: 50px;
+}
+
+/* Modal dark mode support */
+.modal-content {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+}
+
+.modal-header {
+    background: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border) !important;
+}
+
+.modal-title {
+    color: var(--text-primary) !important;
+}
+
+.modal-body {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+}
+
+.btn-close {
+    filter: var(--bs-btn-close-white-filter, invert(1) grayscale(100%) brightness(200%));
+}
+
+[data-theme="light"] .btn-close {
+    filter: none;
+}

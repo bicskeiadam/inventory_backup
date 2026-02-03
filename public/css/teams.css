@@ -1,0 +1,133 @@
+/* ===== Globális stílusok ===== */
+body {
+    background: #f0f4ff;
+    font-family: 'Inter', sans-serif;
+    color: #1e2a4a;
+    padding-bottom: 50px;
+}
+
+.card {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    background: #ffffff;
+    animation: fadeIn 0.6s ease;
+}
+
+h4, h5, h6 {
+    font-weight: 600;
+    color: #12306b;
+}
+
+h6 {
+    margin-top: 15px;
+}
+
+/* ===== Forms & Inputs ===== */
+.form-select, input.form-control {
+    border-radius: 10px;
+    border: 2px solid #d0dcff;
+    padding: 8px 12px;
+    transition: .3s ease;
+}
+
+.form-select:focus, input.form-control:focus {
+    border-color: #4d77ff;
+    box-shadow: 0 0 0 .2rem rgba(77,119,255,0.25);
+}
+
+form .btn {
+    border-radius: 10px;
+    transition: .3s ease;
+}
+
+/* ===== Listák ===== */
+.list-group-item {
+    border: none;
+    border-radius: 14px !important;
+    margin-bottom: 10px;
+    padding: 14px 18px;
+    background: #f8faff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: .25s ease;
+}
+
+.list-group-item:hover {
+    background: #e8eeff;
+    transform: translateX(4px);
+}
+
+/* ===== Buttons ===== */
+.btn-outline-primary {
+    border-width: 2px;
+}
+
+.btn-outline-primary:hover {
+    background: #4d77ff;
+    color: #fff;
+}
+
+.btn-outline-danger {
+    border-width: 2px;
+}
+
+.btn-outline-danger:hover {
+    background: #ff4d6d;
+    color: #fff;
+}
+
+.btn-primary {
+    background: #4d77ff;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #3c63db;
+}
+
+.btn-success {
+    background: #22c55e;
+    border: none;
+}
+
+.btn-success:hover {
+    background: #1da34e;
+}
+
+/* ===== Helyiség hozzárendelés doboz ===== */
+.border {
+    border-radius: 12px;
+    background: #f5faff;
+    padding: 10px 14px;
+    transition: .3s ease;
+}
+
+.border:hover {
+    background: #e0ebff;
+}
+
+/* ===== Kártya animáció ===== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Dashboard nav ===== */
+.navbar {
+    background: linear-gradient(135deg, #3e5fff, #6080ff);
+    padding: 12px 0;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.3rem;
+}
+
+/* ===== Reszponzív ===== */
+@media (max-width: 768px) {
+    .card {
+        padding: 20px;
+    }
+}
