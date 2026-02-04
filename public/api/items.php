@@ -53,10 +53,16 @@ if ($method === 'GET') {
 
 if ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
-    $roomId = $input['room_id'] ?? null;
-    $name = $input['name'] ?? null;
-    if (!$roomId || !$name)
-        ApiResponse::json(['message' => 'room_id and name required'], 422);
+    // Check for specific action
+    if (isset($input['action'])) {
+        // Handle Action based requests below
+    } else {
+        // Default: Create new Item (Legacy)
+        $roomId = $input['room_id'] ?? null;
+        $name = $input['name'] ?? null;
+        if (!$roomId || !$name)
+            ApiResponse::json(['message' => 'room_id and name required'], 422);
+    }
 
     // Create item first to get the ID
     if (!isset($input['action'])) {
@@ -88,52 +94,62 @@ if ($method === 'POST') {
 
     // Record inventory item (Mobile App Action)
     if ($input['action'] === 'record_item') {
-        require_once __DIR__ . '/../../app/models/InventoryItem.php';
-        $inventoryItemModel = new InventoryItem($db);
+        try {
+            require_once __DIR__ . '/../../app/models/InventoryItem.php';
+            $inventoryItemModel = new InventoryItem($db);
 
-        $inventoryId = $input['inventory_id'] ?? null;
-        $itemId = $input['item_id'] ?? null;
-        $isPresent = isset($input['is_present']) ? (int) $input['is_present'] : 1;
-        $note = $input['note'] ?? '';
-        $photoBase64 = $input['photo'] ?? null;
+            $inventoryId = $input['inventory_id'] ?? null;
+            $itemId = $input['item_id'] ?? null;
+            $isPresent = isset($input['is_present']) ? (int) $input['is_present'] : 1;
+            $note = $input['note'] ?? '';
+            $photoBase64 = $input['photo'] ?? null;
 
-        if (!$inventoryId || !$itemId) {
-            ApiResponse::json(['message' => 'inventory_id and item_id required'], 422);
-        }
+            if (!$inventoryId || !$itemId) {
+                throw new Exception('inventory_id and item_id required');
+            }
 
-        $photoPath = null;
-        // Handle photo upload
-        if ($photoBase64) {
-            // Expect base64 string (maybe with data:image/jpeg;base64, prefix)
-            if (preg_match('/^data:image\/(\w+);base64,/', $photoBase64, $type)) {
-                $photoBase64 = substr($photoBase64, strpos($photoBase64, ',') + 1);
-                $type = strtolower($type[1]); // jpg, png, gif
-                if (!in_array($type, ['jpg', 'jpeg', 'png', 'webp']))
-                    $type = 'jpg';
+            $photoPath = null;
+            // Handle photo upload
+            if ($photoBase64) {
+                // Expect base64 string (maybe with data:image/jpeg;base64, prefix)
+                if (preg_match('/^data:image\/(\w+);base64,/', $photoBase64, $type)) {
+                    $photoBase64 = substr($photoBase64, strpos($photoBase64, ',') + 1);
+                    $type = strtolower($type[1]); // jpg, png, gif
+                    if (!in_array($type, ['jpg', 'jpeg', 'png', 'webp']))
+                        $type = 'jpg';
 
-                $photoBase64 = base64_decode($photoBase64);
-                if ($photoBase64) {
-                    $fileName = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $type;
-                    $dir = __DIR__ . '/../../public/uploads/photos';
-                    if (!is_dir($dir))
-                        mkdir($dir, 0777, true);
+                    $photoBase64 = base64_decode($photoBase64);
+                    if ($photoBase64) {
+                        $fileName = 'photo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $type;
+                        $dir = __DIR__ . '/../../public/uploads/photos';
+                        if (!is_dir($dir)) {
+                            if (!mkdir($dir, 0777, true)) {
+                                throw new Exception("Failed to create directory: $dir");
+                            }
+                        }
 
-                    file_put_contents($dir . '/' . $fileName, $photoBase64);
-                    $photoPath = '/uploads/photos/' . $fileName;
+                        if (file_put_contents($dir . '/' . $fileName, $photoBase64) === false) {
+                            throw new Exception("Failed to write file to $dir");
+                        }
+                        $photoPath = '/uploads/photos/' . $fileName;
+                    }
                 }
             }
+
+            $inventoryItemModel->record(
+                (int) $inventoryId,
+                (int) $itemId,
+                (int) $user['id'],
+                $isPresent,
+                $note,
+                $photoPath
+            );
+
+            ApiResponse::json(['success' => true, 'photo' => $photoPath], 200);
+
+        } catch (Exception $e) {
+            ApiResponse::json(['message' => 'Error recording item', 'error' => $e->getMessage()], 500);
         }
-
-        $inventoryItemModel->record(
-            (int) $inventoryId,
-            (int) $itemId,
-            (int) $user['id'],
-            $isPresent,
-            $note,
-            $photoPath
-        );
-
-        ApiResponse::json(['success' => true, 'photo' => $photoPath], 200);
     }
 }
 

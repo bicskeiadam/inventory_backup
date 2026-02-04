@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inventory API Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+</head>
+
+<body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" crossorigin></script>
+    <script>
+        const spec = {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Inventory Management API",
+                "description": "API for the Inventory Management Mobile App and Dashboard",
+                "version": "1.0.0"
+            },
+            "servers": [
+                {
+                    "url": "https://lapmesterek.stud.vts.su.ac.rs/inventory_backup/public/api",
+                    "description": "Production Server"
+                },
+                {
+                    "url": "http://localhost/inventory_backup/public/api",
+                    "description": "Local Development Server"
+                }
+            ],
+            "components": {
+                "securitySchemes": {
+                    "bearerAuth": {
+                        "type": "http",
+                        "scheme": "bearer",
+                        "bearerFormat": "JWT"
+                    }
+                }
+            },
+            "security": [
+                {
+                    "bearerAuth": []
+                }
+            ],
+            "paths": {
+                "/login.php": {
+                    "post": {
+                        "summary": "User Login",
+                        "security": [],
+                        "requestBody": {
+                            "required": true,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {
+                                                "type": "string",
+                                                "example": "worker@example.com"
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "example": "password"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {
+                                "description": "Successful login",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "role": {
+                                                    "type": "string"
+                                                },
+                                                "api_token": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "401": {
+                                "description": "Invalid credentials"
+                            }
+                        }
+                    }
+                },
+                "/inventories.php": {
+                    "get": {
+                        "summary": "Get Inventories or Worker Data",
+                        "parameters": [
+                            {
+                                "in": "query",
+                                "name": "company_id",
+                                "schema": {
+                                    "type": "integer"
+                                },
+                                "description": "Filter inventories by company ID"
+                            },
+                            {
+                                "in": "query",
+                                "name": "get_workers",
+                                "schema": {
+                                    "type": "integer",
+                                    "enum": [
+                                        1
+                                    ]
+                                },
+                                "description": "Set to 1 to retrieve list of workers"
+                            }
+                        ],
+                        "responses": {
+                            "200": {
+                                "description": "List of inventories or workers",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "inventories": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "status": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "/items.php": {
+                    "get": {
+                        "summary": "Get Items",
+                        "parameters": [
+                            {
+                                "in": "query",
+                                "name": "inventory_id",
+                                "schema": {
+                                    "type": "integer"
+                                },
+                                "description": "Get items for a specific inventory"
+                            }
+                        ],
+                        "responses": {
+                            "200": {
+                                "description": "List of items",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "items": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer"
+                                                            },
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "room_id": {
+                                                                "type": "integer"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "post": {
+                        "summary": "Record Item / Upload Photo",
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "action": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "record_item"
+                                                ]
+                                            },
+                                            "inventory_id": {
+                                                "type": "integer"
+                                            },
+                                            "item_id": {
+                                                "type": "integer"
+                                            },
+                                            "is_present": {
+                                                "type": "integer",
+                                                "enum": [
+                                                    0,
+                                                    1
+                                                ]
+                                            },
+                                            "note": {
+                                                "type": "string"
+                                            },
+                                            "photo": {
+                                                "type": "string",
+                                                "description": "Base64 encoded image string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {
+                                "description": "Item recorded successfully"
+                            }
+                        }
+                    }
+                },
+                "/submissions.php": {
+                    "post": {
+                        "summary": "Submit Inventory",
+                        "requestBody": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "inventory_id": {
+                                                "type": "integer"
+                                            },
+                                            "payload": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "items": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "item_id": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "is_present": {
+                                                                    "type": "integer"
+                                                                },
+                                                                "note": {
+                                                                    "type": "string"
+                                                                },
+                                                                "photo": {
+                                                                    "type": "string",
+                                                                    "description": "Base64 string"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "201": {
+                                "description": "Submission created successfully"
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        window.onload = () => {
+            window.ui = SwaggerUIBundle({
+                spec: spec, // Use embedded spec instead of URL to avoid CORS
+                dom_id: '#swagger-ui',
+            });
+        };
+    </script>
+</body>
+
+</html>

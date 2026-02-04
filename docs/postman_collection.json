@@ -5,21 +5,725 @@
   },
   "item": [
     {
-      "name": "Login",
+      "name": "1. Login",
       "request": {
         "method": "POST",
-        "header": [{"key":"Content-Type","value":"application/json"}],
-        "body": {"mode":"raw","raw":"{ \"email\":\"worker@example.com\", \"password\":\"password\" }"},
-        "url": {"raw":"{{baseUrl}}/api/login.php","host":["{{baseUrl}}"], "path":["api","login.php"]}
-      }
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"worker@example.com\",\n    \"password\": \"password\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/login.php",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "login.php"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"worker@example.com\",\n    \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/login.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "login.php"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"id\": 5,\n    \"name\": \"Test Worker\",\n    \"email\": \"worker@example.com\",\n    \"role\": \"worker\",\n    \"api_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI...\"\n}"
+        }
+      ]
     },
     {
-      "name": "Get items by room",
+      "name": "2. Get Inventories (Worker's Company)",
       "request": {
         "method": "GET",
-        "header": [{"key":"Authorization","value":"Bearer {{token}}"}],
-        "url": {"raw":"{{baseUrl}}/api/items.php?room_id=1"}
-      }
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/inventories.php?company_id=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventories.php"
+          ],
+          "query": [
+            {
+              "key": "company_id",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventories.php?company_id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventories.php"
+              ],
+              "query": [
+                {
+                  "key": "company_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"inventories\": [\n        {\n            \"id\": 6,\n            \"company_id\": 1,\n            \"name\": \"Nyári leltár\",\n            \"status\": \"scheduled\",\n            \"start_date\": \"2024-06-01\",\n            \"closed_at\": null\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "3. Get Items (for Inventory)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/items.php?inventory_id=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "items.php"
+          ],
+          "query": [
+            {
+              "key": "inventory_id",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/items.php?inventory_id=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "items.php"
+              ],
+              "query": [
+                {
+                  "key": "inventory_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"items\": [\n        {\n            \"id\": 74,\n            \"room_id\": 3,\n            \"name\": \"Irodaszék\",\n            \"qr_code\": \"/uploads/qr/qr_123.png\",\n            \"status\": \"ok\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "4. Record Item / Upload Photo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"action\": \"record_item\",\n    \"inventory_id\": 1,\n    \"item_id\": 74,\n    \"is_present\": 1,\n    \"note\": \"Teszt\",\n    \"photo\": null\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/items.php",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "items.php"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"record_item\",\n    \"inventory_id\": 1,\n    \"item_id\": 74,\n    \"is_present\": 1,\n    \"note\": \"Teszt\",\n    \"photo\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/items.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "items.php"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"photo\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "5. Submit Inventory (Bulk)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"inventory_id\": 6,\n    \"payload\": {\n        \"items\": [\n            { \"item_id\": 113, \"is_present\": 1, \"note\": \"Megvan\", \"photo\": \"base64string...\" },\n            { \"item_id\": 115, \"is_present\": 0, \"note\": \"Hiany\", \"photo\": null }\n        ]\n    }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/submissions.php",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "submissions.php"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"inventory_id\": 6,\n    \"payload\": {\n        \"items\": []\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/submissions.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "submissions.php"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"success\": true,\n    \"message\": \"Submission received\",\n    \"count\": 2\n}"
+        }
+      ]
+    },
+    {
+      "name": "---------- EMPLOYER ACTIONS ----------",
+      "request": {
+        "method": "GET",
+        "url": "http://separator"
+      },
+      "response": []
+    },
+    {
+      "name": "6. Get Workers List",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/inventories.php?get_workers=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventories.php"
+          ],
+          "query": [
+            {
+              "key": "get_workers",
+              "value": "1"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/inventories.php?get_workers=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventories.php"
+              ],
+              "query": [
+                {
+                  "key": "get_workers",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"free_workers\": [],\n    \"assigned_workers\": [\n        {\n            \"id\": 5,\n            \"name\": \"Test Worker\",\n            \"email\": \"worker@example.com\",\n            \"company_name\": \"Test Company\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "7. Assign Worker to Company",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"action\": \"assign_worker\",\n    \"worker_id\": 5,\n    \"company_id\": 1\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/inventories.php",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventories.php"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"assign_worker\",\n    \"worker_id\": 5,\n    \"company_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inventories.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventories.php"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"success\": true\n}"
+        }
+      ]
+    },
+    {
+      "name": "8. Review Submission (Approve/Reject)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"action\": \"review_submission\",\n    \"submission_id\": 10,\n    \"status\": \"approved\",\n    \"message\": \"Well done!\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/inventories.php",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventories.php"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"action\": \"review_submission\",\n    \"submission_id\": 10,\n    \"status\": \"approved\",\n    \"message\": \"Well done!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inventories.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventories.php"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"success\": true\n}"
+        }
+      ]
+    },
+    {
+      "name": "9. Create Inventory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"company_id\": 1,\n    \"name\": \"New Office Inventory\",\n    \"start_date\": \"2024-05-01\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/inventories.php",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "inventories.php"
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"company_id\": 1,\n    \"name\": \"New Office Inventory\",\n    \"start_date\": \"2024-05-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/inventories.php",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "inventories.php"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"id\": 15\n}"
+        }
+      ]
+    },
+    {
+      "name": "10. Delete Item",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/items.php?id=99",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "items.php"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "99"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "Success",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/items.php?id=99",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "items.php"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "99"
+                }
+              ]
+            }
+          },
+          "status": "No Content",
+          "code": 204,
+          "_postman_previewlanguage": "plain",
+          "header": [],
+          "cookie": [],
+          "body": null
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://lapmesterek.stud.vts.su.ac.rs/inventory_backup/public",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_TOKEN_HERE",
+      "type": "string"
     }
   ]
 }

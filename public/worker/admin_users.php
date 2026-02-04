@@ -69,6 +69,8 @@ $users = $userModel->all();
     <title>Felhasználók Kezelése - Admin</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <style>
         .user-card {
             transition: box-shadow 0.2s;
@@ -106,7 +108,7 @@ $users = $userModel->all();
                 <div class="card">
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
+                            <table id="usersTable" class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
@@ -215,6 +217,24 @@ $users = $userModel->all();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery & DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            $('#usersTable').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/hu.json'
+                },
+                columnDefs: [
+                    { orderable: false, targets: -1 } // Disable sorting on the Actions column (last one)
+                ]
+            });
+        });
+    </script>
 </body>
 
 </html>

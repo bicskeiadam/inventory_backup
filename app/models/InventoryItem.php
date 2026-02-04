@@ -17,7 +17,7 @@ class InventoryItem extends Model
         if ($stmt->fetch()) {
             // Setup update or just return error? For api mostly we might want to update or ignore.
             // Let's UPDATE to allow correction
-            $sql = "UPDATE inventory_items SET user_id = ?, is_present = ?, note = ?, updated_at = NOW()";
+            $sql = "UPDATE inventory_items SET user_id = ?, is_present = ?, note = ?";
             $params = [$userId, $isPresent, $note];
 
             if ($photoPath) {
@@ -46,7 +46,7 @@ class InventoryItem extends Model
         } else {
             $timestamp = date('Y-m-d H:i:s');
         }
-        
+
         $stmt = $this->pdo->prepare("INSERT INTO inventory_items (inventory_id, item_id, user_id, is_present, note, photo, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([$inventoryId, $itemId, $userId, $isPresent, $note, $photoPath, $timestamp]);
         return $this->pdo->lastInsertId();
