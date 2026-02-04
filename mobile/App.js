@@ -13,6 +13,7 @@ import {
   RefreshControl,
   Animated,
 } from 'react-native';
+
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -174,7 +175,13 @@ export default function App() {
   const [manualId, setManualId] = useState('');
   const [permission, requestPermission] = useCameraPermissions();
 
-  // Worker/Company state
+  // Photo capture state
+  const [showPhotoCamera, setShowPhotoCamera] = useState(false);
+  const [photoItem, setPhotoItem] = useState(null); // The item we are taking a photo for
+  const [photoForMissing, setPhotoForMissing] = useState(false); // Is photo for a missing/damaged item?
+  const cameraRef = useRef(null);
+
+  // ... rest of state
   const [assignedCompany, setAssignedCompany] = useState(null);
   const [freeWorkers, setFreeWorkers] = useState([]);
   const [assignedWorkers, setAssignedWorkers] = useState([]);
@@ -214,11 +221,23 @@ export default function App() {
     checkOnlineStatus();
 
     // Check online status every 30 seconds
-    const intervalId = setInterval(() => {
+    const onlineIntervalId = setInterval(() => {
       if (isLoggedIn) {
         checkOnlineStatus();
       }
     }, 30000);
+
+    // Auto-refresh data every 15 seconds when logged in (for real-time updates)
+    const refreshIntervalId = setInterval(() => {
+      if (isLoggedIn && isOnline && token) {
+        // Silently refresh inventories in background
+        silentRefreshInventories();
+        // Refresh submissions if on that screen
+        if (currentScreen === 'submissions') {
+          silentRefreshSubmissions();
+        }
+      }
+    }, 15000);
 
     // Start session timer
     if (isLoggedIn && !sessionStartTime) {
@@ -227,31 +246,72 @@ export default function App() {
       logActivity('SESSION_START', 'Bejelentkezés');
     }
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
-  }, [isLoggedIn]);
+    // Cleanup intervals on unmount
+    return () => {
+      clearInterval(onlineIntervalId);
+      clearInterval(refreshIntervalId);
+    };
+  }, [isLoggedIn, isOnline, token, currentScreen]);
+
+  // Clear old/corrupted cache data to free up space
+  const clearOldCacheData = async () => {
+    try {
+      // Remove old large cached items that might be filling up storage
+      await AsyncStorage.removeItem('cachedItems'); // Old key, no longer used
+      console.log('Cleared old cache data');
+    } catch (error) {
+      console.log('Error clearing old cache:', error);
+    }
+  };
 
   const loadOfflineData = async () => {
     try {
+      // First clear any old cache
+      await clearOldCacheData();
+      
       const storedRecorded = await AsyncStorage.getItem('recordedItems');
       const storedPending = await AsyncStorage.getItem('pendingSubmissions');
+      const storedInventories = await AsyncStorage.getItem('cachedInventories');
 
       if (storedRecorded) {
-        setRecordedItems(JSON.parse(storedRecorded));
+        // Filter out any items with large photo data
+        const items = JSON.parse(storedRecorded);
+        const cleanItems = items.map(item => ({
+          ...item,
+          photo: item.photo === '[PHOTO]' ? null : (item.photo?.startsWith('data:') ? null : item.photo)
+        }));
+        setRecordedItems(cleanItems);
       }
 
       if (storedPending) {
         setPendingSubmissions(JSON.parse(storedPending));
       }
+
+      if (storedInventories) {
+        setInventories(JSON.parse(storedInventories));
+      }
     } catch (error) {
       console.log('Error loading offline data:', error);
+      // If there's an error, try to clear corrupted data
+      try {
+        await AsyncStorage.multiRemove(['recordedItems', 'cachedItems']);
+        console.log('Cleared corrupted cache data');
+      } catch (e) {
+        console.log('Failed to clear corrupted data:', e);
+      }
     }
   };
 
   const saveOfflineData = async () => {
     try {
-      await AsyncStorage.setItem('recordedItems', JSON.stringify(recordedItems));
+      // Strip photos from recorded items before saving to avoid SQLite size limits
+      const recordedItemsWithoutPhotos = recordedItems.map(item => ({
+        ...item,
+        photo: item.photo ? '[PHOTO]' : null // Marker that photo existed but don't store base64
+      }));
+      await AsyncStorage.setItem('recordedItems', JSON.stringify(recordedItemsWithoutPhotos));
       await AsyncStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
+      // Don't save inventories/items here, they're cached separately in fetch functions
     } catch (error) {
       console.log('Error saving offline data:', error);
     }
@@ -317,12 +377,15 @@ export default function App() {
         validateStatus: () => true // Accept any status code
       });
 
+      const wasOffline = !isOnline;
+      
       // Consider online if we get ANY response from server
       setIsOnline(true);
 
-      // Try to sync pending submissions if online
-      if (pendingSubmissions.length > 0) {
-        syncPendingSubmissions();
+      // If we just came back online, sync pending submissions
+      if (wasOffline && pendingSubmissions.length > 0) {
+        console.log('Just came back online, triggering sync...');
+        setTimeout(() => syncPendingSubmissions(), 1000); // Small delay to ensure state is updated
       }
     } catch (error) {
       console.log('Connection check failed:', error.message);
@@ -335,6 +398,8 @@ export default function App() {
 
     console.log(`Syncing ${pendingSubmissions.length} pending submissions...`);
 
+    const successfullySubmitted = [];
+    
     for (const submission of pendingSubmissions) {
       try {
         await axios.post(
@@ -346,19 +411,31 @@ export default function App() {
           }
         );
 
-        // Remove from pending list
-        setPendingSubmissions(prev => prev.filter(s => s !== submission));
+        // Track successfully submitted items
+        successfullySubmitted.push(submission);
+        console.log('Submission synced successfully');
       } catch (error) {
         console.log('Sync failed for submission:', error.message);
         break; // Stop syncing if one fails
       }
     }
 
-    // Update storage
-    await AsyncStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
-
-    if (pendingSubmissions.length === 0) {
-      showAlert('Szinkronizálva ✅', 'Minden offline adat feltöltve!');
+    // Remove successfully submitted items from pending list
+    if (successfullySubmitted.length > 0) {
+      const updatedPending = pendingSubmissions.filter(
+        sub => !successfullySubmitted.includes(sub)
+      );
+      setPendingSubmissions(updatedPending);
+      
+      // Update storage with the new pending list
+      await AsyncStorage.setItem('pendingSubmissions', JSON.stringify(updatedPending));
+      
+      if (updatedPending.length === 0) {
+        showAlert('Szinkronizálva ✅', 'Minden offline adat feltöltve!');
+        logActivity('SYNC_COMPLETE', `${successfullySubmitted.length} beküldés szinkronizálva`);
+      } else {
+        showAlert('Részleges szinkronizálás', `${successfullySubmitted.length} beküldés feltöltve, ${updatedPending.length} várakozik`);
+      }
     }
   };
 
@@ -498,10 +575,27 @@ export default function App() {
       }
 
       setInventories(allInventories);
+      
+      // Cache inventories for offline use
+      await AsyncStorage.setItem('cachedInventories', JSON.stringify(allInventories));
+      console.log('Cached inventories:', allInventories.length);
     } catch (error) {
-      console.log('Fetch inventories error:', error.message);
-      if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
-        showAlert('Hálózati hiba', 'Nem sikerült betölteni a leltárakat');
+      console.log('Fetch inventories error:', error.message, error.code);
+      // Try to load from cache on any error
+      try {
+        const cached = await AsyncStorage.getItem('cachedInventories');
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          setInventories(cachedData);
+          console.log('Loaded from cache:', cachedData.length, 'inventories');
+          showAlert('Offline Mód 📴', 'Leltárak betöltve a gyorsítótárból');
+        } else {
+          console.log('No cached data found');
+          showAlert('Hálózati hiba', 'Nem sikerült betölteni a leltárakat és nincs gyorsítótárazott adat');
+        }
+      } catch (cacheError) {
+        console.log('Cache read error:', cacheError);
+        showAlert('Hiba', 'Nem sikerült betölteni a leltárakat');
       }
     }
   };
@@ -631,11 +725,9 @@ export default function App() {
     } catch (error) {
       console.log('Review submission error:', error.message);
       showAlert('Hiba', 'Nem sikerült feldolgozni a döntést.');
-    } finally {
-      setLoading(false);
     }
   };
-
+    
   const fetchItems = async (inventoryId) => {
     try {
       const response = await axios.get(
@@ -645,12 +737,39 @@ export default function App() {
           timeout: 10000,
         }
       );
-      setItems(response.data.items || []);
+      const fetchedItems = response.data.items || [];
+      setItems(fetchedItems);
+      
+      // Cache items for offline use (store with inventory ID)
+      const cachedItemsData = await AsyncStorage.getItem('cachedItemsByInventory') || '{}';
+      const cachedItems = JSON.parse(cachedItemsData);
+      cachedItems[inventoryId] = fetchedItems;
+      await AsyncStorage.setItem('cachedItemsByInventory', JSON.stringify(cachedItems));
     } catch (error) {
-      console.log('Fetch items error:', error.message);
-      setItems([]);
-      if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
-        showAlert('Hálózati hiba', 'Nem sikerült betölteni az eszközöket');
+      console.log('Fetch items error:', error.message, error.code);
+      // Try to load from cache on any error
+      try {
+        const cachedItemsData = await AsyncStorage.getItem('cachedItemsByInventory');
+        if (cachedItemsData) {
+          const cachedItems = JSON.parse(cachedItemsData);
+          if (cachedItems[inventoryId]) {
+            setItems(cachedItems[inventoryId]);
+            console.log('Loaded from cache:', cachedItems[inventoryId].length, 'items');
+            showAlert('Offline Mód 📴', 'Eszközök betöltve a gyorsítótárból');
+          } else {
+            setItems([]);
+            console.log('No cached items for this inventory');
+            showAlert('Hálózati hiba', 'Nem sikerült betölteni az eszközöket és nincs gyorsítótárazott adat ehhez a leltárhoz');
+          }
+        } else {
+          setItems([]);
+          console.log('No cached items data at all');
+          showAlert('Hálózati hiba', 'Nem sikerült betölteni az eszközöket és nincs gyorsítótárazott adat');
+        }
+      } catch (cacheError) {
+        console.log('Cache read error:', cacheError);
+        setItems([]);
+        showAlert('Hiba', 'Nem sikerült betölteni az eszközöket');
       }
     }
   };
@@ -670,21 +789,67 @@ export default function App() {
 
     setLoading(true);
 
-    const payload = {
-      items: recordedItems.map((item) => ({
-        item_id: item.id,
-        is_present: item.isPresent ? 1 : 0,
-        note: item.note || (item.isPresent ? 'Megtalálva' : 'Hiányzik'),
-        photo: item.photo || null,
-      })),
-    };
-
-    const submissionData = {
-      inventory_id: selectedInventory.id,
-      payload
-    };
-
     try {
+      // First, upload any photos separately
+      const itemsWithUploadedPhotos = await Promise.all(
+        recordedItems.map(async (item) => {
+          if (item.photo && isOnline && item.photo.startsWith('data:')) {
+            try {
+              console.log('Uploading photo for item', item.id, 'photo length:', item.photo.length);
+              
+              // Upload photo separately
+              const photoResponse = await axios.post(
+                `${API_URL}/submissions.php?upload_photo=1`,
+                { 
+                  photo: item.photo,
+                  item_id: item.id,
+                  inventory_id: selectedInventory.id
+                },
+                {
+                  headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  timeout: 60000, // 60 second timeout for photo upload
+                  maxContentLength: Infinity,
+                  maxBodyLength: Infinity,
+                }
+              );
+              
+              console.log('Photo uploaded successfully:', photoResponse.data);
+              
+              // Replace base64 with uploaded photo path
+              return {
+                ...item,
+                photo: photoResponse.data.photo_path || null
+              };
+            } catch (photoError) {
+              console.log('Photo upload failed for item', item.id, photoError.message);
+              console.log('Photo error details:', photoError.response?.data);
+              // Continue without photo if upload fails
+              return { ...item, photo: null };
+            }
+          }
+          return item;
+        })
+      );
+
+      const payload = {
+        items: itemsWithUploadedPhotos.map((item) => ({
+          item_id: item.id,
+          item_name: item.name || 'Ismeretlen eszköz',
+          is_present: item.isPresent ? 1 : 0,
+          note: item.note || (item.isPresent ? 'Megtalálva' : 'Hiányzik'),
+          photo: item.photo || null, // Now contains path instead of base64
+          recorded_at: item.recordedAt || new Date().toISOString(), // When item was scanned
+        })),
+      };
+
+      const submissionData = {
+        inventory_id: selectedInventory.id,
+        payload
+      };
+
       if (isOnline) {
         await axios.post(
           `${API_URL}/submissions.php`,
@@ -702,9 +867,22 @@ export default function App() {
         setSelectedInventory(null);
         fetchMySubmissions();  // Refresh submissions list
       } else {
-        // Save to pending submissions for later sync
-        setPendingSubmissions([...pendingSubmissions, submissionData]);
-        showAlert('Offline Mód 📴', 'Az adatok mentve lettek és automatikusan feltöltésre kerülnek, amikor újra online lesz a készülék.');
+        // Save to pending submissions for later sync (without photos for offline)
+        const offlinePayload = {
+          items: recordedItems.map((item) => ({
+            item_id: item.id,
+            item_name: item.name || 'Ismeretlen eszköz',
+            is_present: item.isPresent ? 1 : 0,
+            note: item.note || (item.isPresent ? 'Megtalálva' : 'Hiányzik'),
+            photo: null, // Don't store base64 in offline mode
+          })),
+        };
+        const offlineSubmissionData = {
+          inventory_id: selectedInventory.id,
+          payload: offlinePayload
+        };
+        setPendingSubmissions([...pendingSubmissions, offlineSubmissionData]);
+        showAlert('Offline Mód 📴', 'Az adatok mentve lettek (fotók nélkül) és automatikusan feltöltésre kerülnek, amikor újra online lesz a készülék.');
         logActivity('SUBMISSION_OFFLINE', `${recordedItems.length} eszköz offline mentve`);
         setRecordedItems([]);
       }
@@ -714,7 +892,20 @@ export default function App() {
 
       // If network error, save offline
       if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
-        setPendingSubmissions([...pendingSubmissions, submissionData]);
+        const offlinePayload = {
+          items: recordedItems.map((item) => ({
+            item_id: item.id,
+            item_name: item.name || 'Ismeretlen eszköz',
+            is_present: item.isPresent ? 1 : 0,
+            note: item.note || (item.isPresent ? 'Megtalálva' : 'Hiányzik'),
+            photo: null,
+          })),
+        };
+        const offlineSubmissionData = {
+          inventory_id: selectedInventory.id,
+          payload: offlinePayload
+        };
+        setPendingSubmissions([...pendingSubmissions, offlineSubmissionData]);
         showAlert('Offline Mód 📴', 'Hálózati hiba! Az adatok mentve lettek offline módban.');
         logActivity('SUBMISSION_OFFLINE', `${recordedItems.length} eszköz offline mentve (hálózati hiba)`);
         setRecordedItems([]);
@@ -772,7 +963,7 @@ export default function App() {
 
     showAlert(item.name, 'Mi az eszköz állapota?', [
       { text: '✅ Megvan', onPress: () => recordItem(item, true) },
-      { text: '❌ Hiányzik', onPress: () => recordItem(item, false) },
+      { text: '❌ Hiányzik', onPress: () => showMissingItemOptions(item) },
       { text: 'Mégse', style: 'cancel' },
     ]);
 
@@ -783,6 +974,86 @@ export default function App() {
     setRefreshing(true);
     await fetchInventories(token, user?.company_id);
     setRefreshing(false);
+  };
+
+  // Silent refresh functions for background auto-update (no loading indicators)
+  const silentRefreshInventories = async () => {
+    try {
+      const cid = user?.company_id;
+      if (!cid || !token) return;
+      
+      const response = await axios.get(
+        `${API_URL}/inventories.php?company_id=${cid}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 5000,
+        }
+      );
+      
+      let allInventories = response.data.inventories || [];
+      
+      // Filter for workers
+      if (user?.role === 'worker') {
+        allInventories = allInventories.filter(inv => inv.status === 'active');
+      }
+      
+      // Only update if data changed (compare by JSON string)
+      const currentIds = inventories.map(i => i.id).sort().join(',');
+      const newIds = allInventories.map(i => i.id).sort().join(',');
+      
+      if (currentIds !== newIds) {
+        console.log('Inventories changed, updating...');
+        setInventories(allInventories);
+        await AsyncStorage.setItem('cachedInventories', JSON.stringify(allInventories));
+      }
+    } catch (error) {
+      // Silent fail - don't show error for background refresh
+      console.log('Silent refresh inventories failed:', error.message);
+    }
+  };
+
+  const silentRefreshSubmissions = async () => {
+    try {
+      if (!token) return;
+      
+      if (user?.role === 'worker') {
+        const response = await axios.get(
+          `${API_URL}/submissions.php?my_submissions=1`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 5000,
+          }
+        );
+        const submissions = response.data.submissions || [];
+        
+        // Only update if count changed
+        if (submissions.length !== mySubmissions.length) {
+          console.log('Worker submissions changed, updating...');
+          setMySubmissions(submissions);
+        }
+      } else if (user?.role === 'employer' || user?.role === 'admin') {
+        const companyId = selectedCompanyId || companies[0]?.id;
+        if (!companyId) return;
+        
+        const response = await axios.get(
+          `${API_URL}/submissions.php?company_id=${companyId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 5000,
+          }
+        );
+        const submissions = response.data.submissions || [];
+        
+        // Only update if count changed
+        if (submissions.length !== employerSubmissions.length) {
+          console.log('Employer submissions changed, updating...');
+          setEmployerSubmissions(submissions);
+        }
+      }
+    } catch (error) {
+      // Silent fail - don't show error for background refresh
+      console.log('Silent refresh submissions failed:', error.message);
+    }
   };
 
   // ==================== QR SCANNER ====================
@@ -881,10 +1152,71 @@ export default function App() {
     setShowScanner(false);
 
     showAlert(item.name, `ID: ${item.id}\n\nMi az eszköz állapota?`, [
-      { text: 'Mégse', style: 'cancel' },
-      { text: '❌ Hiányzik', onPress: () => recordItem(item, false) },
       { text: '✅ Megvan', onPress: () => recordItem(item, true) },
+      { text: '❌ Hiányzik', onPress: () => showMissingItemOptions(item) },
+      { text: 'Mégse', style: 'cancel' },
     ]);
+  };
+
+  // Show options when item is marked as missing
+  const showMissingItemOptions = (item) => {
+    showAlert(
+      'Hiányzó eszköz',
+      `${item.name}\n\nSzeretnél fotót csatolni a sérülésről vagy hiányról?`,
+      [
+        { text: '📷 Fotó csatolása', onPress: () => openPhotoCamera(item, true) },
+        { text: '❌ Mentés fotó nélkül', onPress: () => recordItem(item, false) },
+        { text: 'Mégse', style: 'cancel' },
+      ]
+    );
+  };
+
+  const openPhotoCamera = async (item, isMissing = false) => {
+    if (!permission?.granted) {
+      const result = await requestPermission();
+      if (!result.granted) {
+        showAlert('Hiba', 'Kamera engedély szükséges a fotózáshoz!');
+        return;
+      }
+    }
+    setPhotoItem(item);
+    setPhotoForMissing(isMissing);
+    setShowPhotoCamera(true);
+  };
+
+  const handleTakePhoto = async () => {
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.2, // Compress to 20% for smaller file size
+          base64: true,
+          skipProcessing: true,
+          exif: false,
+        });
+
+        // Close camera
+        setShowPhotoCamera(false);
+
+        // Record item with photo
+        if (photoItem) {
+          const base64Img = `data:image/jpeg;base64,${photo.base64}`;
+          
+          if (photoForMissing) {
+            // Missing item with damage photo
+            recordItem(photoItem, false, 'Hiányzik/Sérült (Fotóval)', base64Img);
+          } else {
+            // Found item with photo
+            recordItem(photoItem, true, 'Megtalálva (Fotóval)', base64Img);
+          }
+          
+          // Reset photo state
+          setPhotoForMissing(false);
+        }
+      } catch (e) {
+        console.log('Photo error:', e);
+        showAlert('Hiba', 'Nem sikerült a fotót elkészíteni.');
+      }
+    }
   };
 
   // ==================== WORKER ASSIGNMENT (FOR EMPLOYERS) ====================
@@ -1118,10 +1450,20 @@ export default function App() {
                 <Text style={styles.infoValue}>{activityLog.length}</Text>
               </View>
               {pendingSubmissions.length > 0 && (
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Várakozó küldések:</Text>
-                  <Text style={styles.infoValue}>{pendingSubmissions.length}</Text>
-                </View>
+                <TouchableOpacity 
+                  style={[styles.infoRow, { backgroundColor: theme.warning + '20', padding: 8, borderRadius: 8 }]}
+                  onPress={() => {
+                    if (isOnline) {
+                      syncPendingSubmissions();
+                      Alert.alert('Szinkronizálás', 'Várakozó küldések szinkronizálása megkezdődött...');
+                    } else {
+                      Alert.alert('Nincs kapcsolat', 'Internetkapcsolat szükséges a szinkronizáláshoz.');
+                    }
+                  }}
+                >
+                  <Text style={styles.infoLabel}>Várakozó küldések: (Koppints a szinkronizáláshoz)</Text>
+                  <Text style={[styles.infoValue, { color: theme.warning, fontWeight: 'bold' }]}>{pendingSubmissions.length}</Text>
+                </TouchableOpacity>
               )}
             </View>
           </ScrollView>
@@ -1546,6 +1888,42 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
+          {/* Company Selector */}
+          {companies.length > 1 && (
+            <View style={{ paddingHorizontal: 16, paddingVertical: 10, backgroundColor: theme.card, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+              <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 6 }}>Cég kiválasztása:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {companies.map((company) => (
+                    <TouchableOpacity
+                      key={company.id}
+                      onPress={() => {
+                        setSelectedCompanyId(company.id);
+                        fetchEmployerSubmissions(company.id);
+                      }}
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        backgroundColor: selectedCompanyId === company.id ? theme.primary : theme.background,
+                        borderWidth: 1,
+                        borderColor: selectedCompanyId === company.id ? theme.primary : theme.border,
+                      }}
+                    >
+                      <Text style={{
+                        color: selectedCompanyId === company.id ? '#fff' : theme.text,
+                        fontSize: 14,
+                        fontWeight: selectedCompanyId === company.id ? '600' : '400',
+                      }}>
+                        {company.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
           <View style={{ flex: 1 }}>
             <ScrollView
               contentContainerStyle={{ padding: 16 }}
@@ -1661,7 +2039,7 @@ export default function App() {
                                     />
                                     <View style={{ flex: 1 }}>
                                       <Text style={{ color: theme.text, fontSize: 14 }}>
-                                        Eszköz #{recordedItem.item_id}
+                                        {recordedItem.item_name || `Eszköz #${recordedItem.item_id}`}
                                       </Text>
                                       {recordedItem.note && (
                                         <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
@@ -1891,9 +2269,27 @@ export default function App() {
                   </Text>
                 </View>
                 {pendingSubmissions.length > 0 && (
-                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, marginLeft: 8 }}>
-                    ({pendingSubmissions.length} várakozik)
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (isOnline) {
+                        syncPendingSubmissions();
+                        Alert.alert('Szinkronizálás', 'Várakozó küldések szinkronizálása megkezdődött...');
+                      } else {
+                        Alert.alert('Nincs kapcsolat', 'Internetkapcsolat szükséges a szinkronizáláshoz.');
+                      }
+                    }}
+                    style={{
+                      backgroundColor: theme.warning + '40',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 8,
+                      marginLeft: 8,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: 'bold' }}>
+                      {pendingSubmissions.length} várakozik - Koppints a szinkronizáláshoz
+                    </Text>
+                  </TouchableOpacity>
                 )}
               </View>
               {user?.role === 'worker' && assignedCompany && (
@@ -2115,15 +2511,18 @@ export default function App() {
                 </Text>
               </View>
 
-              {recordedItems.length === 0 ? (
-                <View style={{ alignItems: 'center', padding: 20 }}>
-                  <Ionicons name="cube-outline" size={40} color={theme.textSecondary} style={{ marginBottom: 8 }} />
-                  <Text style={styles.muted}>Még nem rögzítettél eszközt</Text>
-                </View>
-              ) : (
-                recordedItems.map((item, index) => (
+              <FlatList
+                data={recordedItems}
+                scrollEnabled={false}
+                keyExtractor={(item) => item.id.toString()}
+                ListEmptyComponent={
+                  <View style={{ alignItems: 'center', padding: 20 }}>
+                    <Ionicons name="cube-outline" size={40} color={theme.textSecondary} style={{ marginBottom: 8 }} />
+                    <Text style={styles.muted}>Még nem rögzítettél eszközt</Text>
+                  </View>
+                }
+                renderItem={({ item, index }) => (
                   <View
-                    key={item.id}
                     style={{
                       flexDirection: 'row',
                       alignItems: 'center',
@@ -2164,8 +2563,8 @@ export default function App() {
                       <Ionicons name="trash-outline" size={18} color={theme.danger} />
                     </TouchableOpacity>
                   </View>
-                ))
-              )}
+                )}
+              />
             </View>
 
           </ScrollView>
@@ -2267,7 +2666,7 @@ export default function App() {
                         if (!recorded) {
                           showAlert(item.name, 'Mi az eszköz állapota?', [
                             { text: '✅ Megvan', onPress: () => recordItem(item, true) },
-                            { text: '❌ Hiányzik', onPress: () => recordItem(item, false) },
+                            { text: '❌ Hiányzik', onPress: () => showMissingItemOptions(item) },
                             { text: 'Mégse', style: 'cancel' },
                           ]);
                         }
@@ -2305,6 +2704,7 @@ export default function App() {
         theme={theme}
         onClose={closeAlert}
       />
+      
       {/* Render screens based on state */}
       {isLoggedIn ? (
         selectedInventory ? (
@@ -2321,6 +2721,43 @@ export default function App() {
       ) : (
         renderLoginScreen()
       )}
+      {/* Photo Camera Modal */}
+      <Modal visible={showPhotoCamera} animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'black' }}>
+          <CameraView
+            style={{ flex: 1 }}
+            facing="back"
+            ref={cameraRef}
+          >
+            <View style={{ flex: 1, justifyContent: 'space-between', padding: 20 }}>
+              <TouchableOpacity
+                style={{ alignSelf: 'flex-end', padding: 10, marginTop: 40 }}
+                onPress={() => setShowPhotoCamera(false)}
+              >
+                <Ionicons name="close" size={30} color="white" />
+              </TouchableOpacity>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 30 }}>
+                <TouchableOpacity
+                  onPress={handleTakePhoto}
+                  style={{
+                    width: 70,
+                    height: 70,
+                    borderRadius: 35,
+                    backgroundColor: 'white',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: 4,
+                    borderColor: 'rgba(255,255,255,0.5)'
+                  }}
+                >
+                  <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: 'white' }} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </CameraView>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -2771,5 +3208,42 @@ const getThemeStyles = (theme) => StyleSheet.create({
     color: theme.primary,
     fontWeight: '600',
   },
+  navBtnActiveText: {
+    color: theme.primary,
+    fontWeight: '600',
+  },
+  // Scanner Overlay
+  scannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scannerFrame: {
+    width: 250,
+    height: 250,
+    borderWidth: 2,
+    borderColor: '#00FF00',
+    backgroundColor: 'transparent',
+  },
+  camera: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  scannerText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  closeScannerBtn: {
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 5,
+  },
+  closeScannerText: {
+    color: 'black',
+    fontSize: 16,
+  },
 });
+
 

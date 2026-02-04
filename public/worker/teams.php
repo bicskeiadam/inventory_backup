@@ -252,6 +252,18 @@ $users = $userModel->findById($user['id']) ? [$userModel->findById($user['id'])]
         </div>
     </div>
     </div>
+    
+<script>
+    // Auto-refresh page every 30 seconds (if user isn't typing in a form)
+    setInterval(function() {
+        var activeElement = document.activeElement;
+        var isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'SELECT');
+        
+        if (!isTyping) {
+            location.reload();
+        }
+    }, 30000);
+</script>
 </body>
 
 </html>

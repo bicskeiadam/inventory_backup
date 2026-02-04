@@ -486,6 +486,17 @@ $items = $companyId ? $itemModel->getByCompany((int)$companyId) : [];
             var closeBtn = document.getElementById('uploadErrorClose');
             if (closeBtn) closeBtn.addEventListener('click', function(){ srvModal.style.display = 'none'; });
         }
+        
+        // Auto-refresh page every 30 seconds (if no modal is open and user isn't typing)
+        setInterval(function() {
+            var openModals = document.querySelectorAll('.modal.show');
+            var activeElement = document.activeElement;
+            var isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'SELECT');
+            
+            if (openModals.length === 0 && !isTyping) {
+                location.reload();
+            }
+        }, 30000);
     })();
 </script>
 

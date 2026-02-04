@@ -765,7 +765,14 @@ $isEmployerOrAdmin = in_array($role, ['employer', 'admin']);
                 });
             }
 
-            document.addEventListener('DOMContentLoaded', loadDashboard);
+            document.addEventListener('DOMContentLoaded', () => {
+                loadDashboard();
+                
+                // Initialize auto-refresh every 15 seconds - reuses loadDashboard for full refresh
+                setInterval(() => {
+                    loadDashboard();
+                }, 15000);
+            });
         </script>
     <?php endif; ?>
 

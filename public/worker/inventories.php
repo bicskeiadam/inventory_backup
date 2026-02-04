@@ -152,9 +152,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $inventoryId = (int) ($_POST['inventory_id'] ?? 0);
         if ($inventoryId && !$isEmployerOrAdmin) {
             // Fetch actual items recorded by this user (or all items for this inventory if shared)
-            // Ideally we only want items this user touched or responsible for. 
-            // For now, let's fetch all items recorded in this inventory as a snapshot.
-            $stmt = $db->prepare("SELECT item_id, is_present, note FROM inventory_items WHERE inventory_id = ?");
+            // Now also fetching item names for display in employer view
+            $stmt = $db->prepare("
+                SELECT ii.item_id, ii.is_present, ii.note, i.name as item_name 
+                FROM inventory_items ii
+                LEFT JOIN items i ON ii.item_id = i.id
+                WHERE ii.inventory_id = ?
+            ");
             $stmt->execute([$inventoryId]);
             $recordedItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -163,6 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($recordedItems as $rec) {
                 $itemsPayload[] = [
                     'item_id' => $rec['item_id'],
+                    'item_name' => $rec['item_name'] ?? 'Ismeretlen eszköz',
                     'is_present' => (bool) $rec['is_present'],
                     'note' => $rec['note'] ?? ''
                 ];
@@ -583,6 +588,19 @@ if ($companyId && !empty($inventories)) {
             </div>
         </div>
     </div>
+    
+    <script>
+        // Auto-refresh page every 30 seconds (if no modal is open and no form is focused)
+        setInterval(() => {
+            const openModals = document.querySelectorAll('.modal.show');
+            const activeElement = document.activeElement;
+            const isTyping = activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'SELECT');
+            
+            if (openModals.length === 0 && !isTyping) {
+                location.reload();
+            }
+        }, 30000);
+    </script>
 </body>
 
 </html>

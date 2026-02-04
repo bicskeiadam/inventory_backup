@@ -28,13 +28,13 @@ $globalItemModel = new Item($db);
 // Determine company_id
 $companyId = $_GET['company_id'] ?? $_POST['company_id'] ?? null;
 
-$companies = $companyModel->all(); 
+$companies = $companyModel->all();
 $selectedCompanyId = $companyId;
 
 // Handle Replies / Status Updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['reply_submission'])) {
-        $submissionId = (int)$_POST['submission_id'];
+        $submissionId = (int) $_POST['submission_id'];
         $message = trim($_POST['message'] ?? '');
         $status = $_POST['status'] ?? ''; // pending, approved, rejected
 
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($submissionId && $status) {
             $inventoryModel->setSubmissionStatus($submissionId, $status);
         }
-        
+
         // Redirect to avoid resubmission
         header("Location: inventory_submissions.php?company_id=$selectedCompanyId&success=1");
         exit;
@@ -54,11 +54,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Fetch submissions
 $submissions = [];
 if ($selectedCompanyId) {
-    $submissions = $inventoryModel->getSubmissionsByCompany((int)$selectedCompanyId);
+    $submissions = $inventoryModel->getSubmissionsByCompany((int) $selectedCompanyId);
 }
 ?>
 <!doctype html>
 <html lang="hu">
+
 <head>
     <meta charset="utf-8">
     <title>Leltár Beküldések</title>
@@ -72,18 +73,24 @@ if ($selectedCompanyId) {
             color: var(--text-primary);
             border-color: var(--border);
         }
-        .modal-header, .modal-footer {
+
+        .modal-header,
+        .modal-footer {
             border-color: var(--border);
         }
+
         .btn-close {
             filter: invert(1) grayscale(100%) brightness(200%);
         }
+
         [data-theme="light"] .btn-close {
             filter: none;
         }
+
         pre {
             color: var(--text-primary);
         }
+
         /* Fix table header background in dark mode if needed */
         thead th {
             background-color: var(--bg-surface) !important;
@@ -91,6 +98,7 @@ if ($selectedCompanyId) {
         }
     </style>
 </head>
+
 <body>
     <?php include_once __DIR__ . '/dashboard_nav.php'; ?>
     <div class="page-container">
@@ -99,14 +107,15 @@ if ($selectedCompanyId) {
                 <div class="card shadow-sm">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Beküldött Leltárak</h4>
-                        
+
                         <!-- Company Selector -->
                         <form method="get" class="d-flex gap-2">
-                            <select name="company_id" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width: 200px;">
+                            <select name="company_id" class="form-select form-select-sm" onchange="this.form.submit()"
+                                style="min-width: 200px;">
                                 <option value="">-- Válassz céget --</option>
                                 <?php foreach ($companies as $c): ?>
-                                    <option value="<?=$c['id']?>" <?= ($selectedCompanyId == $c['id']) ? 'selected' : '' ?>>
-                                        <?=htmlspecialchars($c['name'])?>
+                                    <option value="<?= $c['id'] ?>" <?= ($selectedCompanyId == $c['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($c['name']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -133,32 +142,32 @@ if ($selectedCompanyId) {
                                         <?php foreach ($submissions as $sub): ?>
                                             <tr>
                                                 <td>
-                                                    <strong><?=htmlspecialchars($sub['inventory_name'])?></strong>
+                                                    <strong><?= htmlspecialchars($sub['inventory_name']) ?></strong>
                                                 </td>
                                                 <td>
-                                                    <div><?=htmlspecialchars($sub['worker_name'])?></div>
-                                                    <small class="text-muted"><?=htmlspecialchars($sub['worker_email'])?></small>
+                                                    <div><?= htmlspecialchars($sub['worker_name']) ?></div>
+                                                    <small
+                                                        class="text-muted"><?= htmlspecialchars($sub['worker_email']) ?></small>
                                                 </td>
-                                                <td><?=date('Y.m.d H:i', strtotime($sub['created_at']))?></td>
+                                                <td><?= date('Y.m.d H:i', strtotime($sub['created_at'])) ?></td>
                                                 <td>
-                                                    <?php 
-                                                    $badgeClass = match($sub['status']) {
+                                                    <?php
+                                                    $badgeClass = match ($sub['status']) {
                                                         'approved' => 'bg-success',
                                                         'rejected' => 'bg-danger',
                                                         default => 'bg-warning text-dark'
                                                     };
-                                                    $statusLabel = match($sub['status']) {
+                                                    $statusLabel = match ($sub['status']) {
                                                         'approved' => 'Elfogadva',
                                                         'rejected' => 'Elutasítva',
                                                         default => 'Függőben'
                                                     };
                                                     ?>
-                                                    <span class="badge <?=$badgeClass?>"><?=$statusLabel?></span>
+                                                    <span class="badge <?= $badgeClass ?>"><?= $statusLabel ?></span>
                                                 </td>
                                                 <td>
-                                                    <button class="btn btn-sm btn-outline-primary" 
-                                                            data-bs-toggle="modal" 
-                                                            data-bs-target="#submissionModal_<?=$sub['id']?>">
+                                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                        data-bs-target="#submissionModal_<?= $sub['id'] ?>">
                                                         <i class="bi bi-eye"></i> Részletek
                                                     </button>
                                                 </td>
@@ -170,29 +179,33 @@ if ($selectedCompanyId) {
 
                             <!-- Modals Section - Placed outside the table to prevent layout breakage -->
                             <?php foreach ($submissions as $sub): ?>
-                                <div class="modal fade" id="submissionModal_<?=$sub['id']?>" tabindex="-1" aria-hidden="true">
+                                <div class="modal fade" id="submissionModal_<?= $sub['id'] ?>" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Beküldés részletei #<?=$sub['id']?></h5>
+                                                <h5 class="modal-title">Beküldés részletei #<?= $sub['id'] ?></h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <h6>Leltár adatok:</h6>
                                                 <div class="mb-3">
-                                                    <div><strong>Leltár:</strong> <?=htmlspecialchars($sub['inventory_name'])?></div>
-                                                    <div><strong>Beküldő:</strong> <?=htmlspecialchars($sub['worker_name'])?></div>
-                                                    <div><strong>Időpont:</strong> <?=date('Y.m.d H:i', strtotime($sub['created_at']))?></div>
+                                                    <div><strong>Leltár:</strong> <?= htmlspecialchars($sub['inventory_name']) ?>
+                                                    </div>
+                                                    <div><strong>Beküldő:</strong> <?= htmlspecialchars($sub['worker_name']) ?>
+                                                    </div>
+                                                    <div><strong>Időpont:</strong>
+                                                        <?= date('Y.m.d H:i', strtotime($sub['created_at'])) ?></div>
                                                 </div>
-                                                
+
                                                 <hr>
                                                 <h6>Beküldött tartalom (Adatok):</h6>
                                                 <?php
-                                                    $decoded = json_decode($sub['payload'], true);
-                                                    // Check if it's the expected item list format
-                                                    if ($decoded && isset($decoded['items']) && is_array($decoded['items'])):
-                                                ?>
-                                                    <div class="table-responsive mb-3" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+                                                $decoded = json_decode($sub['payload'], true);
+                                                // Check if it's the expected item list format
+                                                if ($decoded && isset($decoded['items']) && is_array($decoded['items'])):
+                                                    ?>
+                                                    <div class="table-responsive mb-3"
+                                                        style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
                                                         <table class="table table-sm table-striped m-0" style="font-size: 0.9rem;">
                                                             <thead style="position: sticky; top: 0; background: var(--bg-surface);">
                                                                 <tr>
@@ -203,33 +216,42 @@ if ($selectedCompanyId) {
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
-                                                                <?php 
-                                                                foreach ($decoded['items'] as $item): 
-                                                                    $itemData = $globalItemModel->findById((int)$item['item_id']);
-                                                                    $itemName = $itemData ? $itemData['name'] : 'Ismeretlen (ID: '.$item['item_id'].')';
+                                                                <?php
+                                                                foreach ($decoded['items'] as $item):
+                                                                    // First try item_name from payload, then fallback to DB lookup
+                                                                    if (!empty($item['item_name'])) {
+                                                                        $itemName = $item['item_name'];
+                                                                    } else {
+                                                                        $itemData = $globalItemModel->findById((int) $item['item_id']);
+                                                                        $itemName = $itemData ? $itemData['name'] : 'Ismeretlen (ID: ' . $item['item_id'] . ')';
+                                                                    }
                                                                     $isPresent = !empty($item['is_present']);
-                                                                ?>
-                                                                <tr>
-                                                                    <td>
-                                                                        <strong><?=htmlspecialchars($itemName)?></strong><br>
-                                                                        <span class="text-muted small">ID: <?=htmlspecialchars($item['item_id'])?></span>
-                                                                    </td>
-                                                                    <td>
-                                                                        <?php if($isPresent): ?>
-                                                                            <span class="badge bg-success">Megvan</span>
-                                                                        <?php else: ?>
-                                                                            <span class="badge bg-danger">Hiányzik</span>
-                                                                        <?php endif; ?>
-                                                                    </td>
-                                                                    <td><?=htmlspecialchars($item['note'] ?? '-')?></td>
-                                                                    <td>
-                                                                        <?php if(!empty($item['photo'])): ?>
-                                                                            <a href="#" onclick="alert('Fotó megjelenítés nem implementált (Base64 vagy URL?)')">📷 Fotó</a>
-                                                                        <?php else: ?>
-                                                                            <span class="text-muted">-</span>
-                                                                        <?php endif; ?>
-                                                                    </td>
-                                                                </tr>
+                                                                    ?>
+                                                                    <tr>
+                                                                        <td>
+                                                                            <strong><?= htmlspecialchars($itemName) ?></strong><br>
+                                                                            <span class="text-muted small">ID:
+                                                                                <?= htmlspecialchars($item['item_id']) ?></span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <?php if ($isPresent): ?>
+                                                                                <span class="badge bg-success">Megvan</span>
+                                                                            <?php else: ?>
+                                                                                <span class="badge bg-danger">Hiányzik</span>
+                                                                            <?php endif; ?>
+                                                                        </td>
+                                                                        <td><?= htmlspecialchars($item['note'] ?? '-') ?></td>
+                                                                        <td>
+                                                                            <?php if (!empty($item['photo'])): ?>
+                                                                                <span role="button"
+                                                                                    onclick="showPhoto('<?= htmlspecialchars($item['photo']) ?>')"
+                                                                                    style="cursor: pointer; text-decoration: none;"
+                                                                                    title="Fotó megtekintése">📷</span>
+                                                                            <?php else: ?>
+                                                                                <span class="text-muted">-</span>
+                                                                            <?php endif; ?>
+                                                                        </td>
+                                                                    </tr>
                                                                 <?php endforeach; ?>
                                                             </tbody>
                                                         </table>
@@ -239,59 +261,73 @@ if ($selectedCompanyId) {
                                                         <i class="bi bi-check-circle-fill fs-4 mt-1"></i>
                                                         <div>
                                                             <h6 class="alert-heading fw-bold mb-1">Leltár befejezve</h6>
-                                                            <p class="mb-1"><?= htmlspecialchars($decoded['message'] ?? 'A munkavállaló jelezte a befejezést.') ?></p>
-                                                            <small class="opacity-75"><i class="bi bi-clock"></i> <?= htmlspecialchars($decoded['timestamp'] ?? '-') ?></small>
+                                                            <p class="mb-1">
+                                                                <?= htmlspecialchars($decoded['message'] ?? 'A munkavállaló jelezte a befejezést.') ?>
+                                                            </p>
+                                                            <small class="opacity-75"><i class="bi bi-clock"></i>
+                                                                <?= htmlspecialchars($decoded['timestamp'] ?? '-') ?></small>
                                                         </div>
                                                     </div>
-                                                <?php else: 
+                                                <?php else:
                                                     // Fallback for raw JSON
                                                     $prettyJson = $decoded ? json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $sub['payload'];
-                                                ?>
-                                                    <div class="p-3 rounded mb-3" style="background-color: var(--bg-surface); max-height: 300px; overflow-y: auto;">
-                                                        <pre class="m-0" style="font-size: 0.85rem;"><?=htmlspecialchars($prettyJson)?></pre>
+                                                    ?>
+                                                    <div class="p-3 rounded mb-3"
+                                                        style="background-color: var(--bg-surface); max-height: 300px; overflow-y: auto;">
+                                                        <pre class="m-0"
+                                                            style="font-size: 0.85rem;"><?= htmlspecialchars($prettyJson) ?></pre>
                                                     </div>
                                                 <?php endif; ?>
 
                                                 <hr>
                                                 <h6>Korábbi válaszok:</h6>
-                                                <?php 
+                                                <?php
                                                 $responses = $inventoryModel->getResponses($sub['id']);
-                                                foreach ($responses as $resp): 
+                                                foreach ($responses as $resp):
                                                     $isMe = $resp['user_id'] == $user['id'];
-                                                ?>
-                                                    <div class="d-flex mb-2 <?=$isMe ? 'justify-content-end' : ''?>">
-                                                        <div class="p-2 rounded <?=$isMe ? 'bg-primary text-white' : ''?>" 
-                                                             style="max-width: 80%; <?=$isMe ? '' : 'background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border);'?>">
-                                                            <small class="d-block opacity-75 mb-1"><?=date('H:i', strtotime($resp['created_at']))?></small>
-                                                            <?=nl2br(htmlspecialchars($resp['message']))?>
+                                                    ?>
+                                                    <div class="d-flex mb-2 <?= $isMe ? 'justify-content-end' : '' ?>">
+                                                        <div class="p-2 rounded <?= $isMe ? 'bg-primary text-white' : '' ?>"
+                                                            style="max-width: 80%; <?= $isMe ? '' : 'background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border);' ?>">
+                                                            <small
+                                                                class="d-block opacity-75 mb-1"><?= date('H:i', strtotime($resp['created_at'])) ?></small>
+                                                            <?= nl2br(htmlspecialchars($resp['message'])) ?>
                                                         </div>
                                                     </div>
                                                 <?php endforeach; ?>
-                                                <?php if(empty($responses)) echo '<p class="text-muted fst-italic">Nincs még válasz.</p>'; ?>
-                                                
+                                                <?php if (empty($responses))
+                                                    echo '<p class="text-muted fst-italic">Nincs még válasz.</p>'; ?>
+
                                                 <hr>
                                                 <h6>Válasz írása / Státusz módosítása</h6>
                                                 <form method="post">
-                                                    <input type="hidden" name="company_id" value="<?=$selectedCompanyId?>">
-                                                    <input type="hidden" name="submission_id" value="<?=$sub['id']?>">
+                                                    <input type="hidden" name="company_id" value="<?= $selectedCompanyId ?>">
+                                                    <input type="hidden" name="submission_id" value="<?= $sub['id'] ?>">
                                                     <input type="hidden" name="reply_submission" value="1">
-                                                    
+
                                                     <div class="mb-3">
                                                         <label class="form-label">Üzenet a munkatársnak:</label>
-                                                        <textarea name="message" class="form-control" rows="3" placeholder="Írj visszajelzést..."></textarea>
+                                                        <textarea name="message" class="form-control" rows="3"
+                                                            placeholder="Írj visszajelzést..."></textarea>
                                                     </div>
-                                                    
+
                                                     <div class="mb-3">
                                                         <label class="form-label">Státusz:</label>
                                                         <select name="status" class="form-select">
-                                                            <option value="pending" <?=($sub['status']=='pending')?'selected':''?>>Függőben</option>
-                                                            <option value="approved" <?=($sub['status']=='approved')?'selected':''?>>Elfogadva</option>
-                                                            <option value="rejected" <?=($sub['status']=='rejected')?'selected':''?>>Elutasítva (Újraellenőrzés szükséges)</option>
+                                                            <option value="pending"
+                                                                <?= ($sub['status'] == 'pending') ? 'selected' : '' ?>>Függőben</option>
+                                                            <option value="approved"
+                                                                <?= ($sub['status'] == 'approved') ? 'selected' : '' ?>>Elfogadva
+                                                            </option>
+                                                            <option value="rejected"
+                                                                <?= ($sub['status'] == 'rejected') ? 'selected' : '' ?>>Elutasítva
+                                                                (Újraellenőrzés szükséges)</option>
                                                         </select>
                                                     </div>
-                                                    
+
                                                     <div class="d-flex justify-content-end gap-2">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bezárás</button>
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Bezárás</button>
                                                         <button type="submit" class="btn btn-primary">Mentés és Küldés</button>
                                                     </div>
                                                 </form>
@@ -307,7 +343,57 @@ if ($selectedCompanyId) {
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Photo Viewer Modal -->
+    <div class="modal fade" id="photoViewerModal" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Csatolt Fotó</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img id="modalImage" src="" class="img-fluid" alt="Bizonyíték">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPhoto(photoData) {
+            let src = photoData;
+            
+            // Check if it's a file path (contains 'uploads/')
+            if (src.includes('uploads/')) {
+                // It's a file path - ensure correct relative path from /worker/ folder
+                if (!src.startsWith('../') && !src.startsWith('/')) {
+                    src = '../' + src; // Convert uploads/damage/... to ../uploads/damage/...
+                } else if (src.startsWith('/')) {
+                    src = '..' + src; // Convert /uploads/... to ../uploads/...
+                }
+            } else if (src.startsWith('data:image')) {
+                // Already a complete data URL, use as is
+            } else if (src.length > 100) {
+                // Looks like raw base64 data, add prefix
+                src = 'data:image/jpeg;base64,' + src;
+            }
+            // else: might be a relative path, use as is
+            
+            document.getElementById('modalImage').src = src;
+            new bootstrap.Modal(document.getElementById('photoViewerModal')).show();
+        }
+        
+        // Auto-refresh page every 30 seconds (if no modal is open)
+        let autoRefreshTimer = setInterval(() => {
+            // Don't refresh if a modal is open
+            const openModals = document.querySelectorAll('.modal.show');
+            if (openModals.length === 0) {
+                location.reload();
+            }
+        }, 30000);
+    </script>
 </body>
+
 </html>
